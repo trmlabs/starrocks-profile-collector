@@ -1,0 +1,51 @@
+# Quick-start: runs StarRocks + the profile collector writing to a local directory.
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.yml up
+#
+# Then:
+#   1. Connect to StarRocks: mysql -h 127.0.0.1 -P 9030 -u root
+#   2. Enable profiling:
+#        SET GLOBAL enable_profile = true;
+#        ADMIN SET FRONTEND CONFIG("enable_collect_query_detail_info" = "true");
+#   3. Run some queries
+#   4. Check output: ls ./output/starrocks-query-profiles/
+#
+# Cleanup:
+#   docker compose -f deploy/docker-compose.yml down -v
+
+services:
+  starrocks:
+    image: starrocks/allin1-ubuntu:latest
+    ports:
+      - "9030:9030"   # MySQL protocol
+      - "8030:8030"   # FE HTTP
+      - "8040:8040"   # BE HTTP
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8030/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  collector:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      starrocks:
+        condition: service_healthy
+    environment:
+      CLUSTER_NAME: local-dev
+      FE_HOSTS: starrocks:8030
+      FE_USER: root
+      FE_PASSWORD: ""
+      STORAGE_BACKEND: file
+      OUTPUT_DIR: /data
+      FILE_PREFIX: starrocks-query-profiles
+      POLL_INTERVAL: 5s
+      FLUSH_INTERVAL: 10s
+      BATCH_SIZE: 50
+    volumes:
+      - ./output:/data
+    ports:
+      - "9091:9091"
