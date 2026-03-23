@@ -174,6 +174,7 @@ func (w *FileWriter) flush(batch []ProfileEntry) {
 	if err := os.WriteFile(filePath, buf.Bytes(), 0644); err != nil {
 		slog.Error("failed to write JSONL file", "error", err, "path", filePath)
 		flushesTotal.WithLabelValues("error").Inc()
+		w.fallbackLog(batch)
 		return
 	}
 
@@ -187,4 +188,16 @@ func (w *FileWriter) flush(batch []ProfileEntry) {
 
 	slog.Info("file flush complete", "entries", len(batch), "bytes", bytesWritten,
 		"path", filePath, "duration", flushDuration.String())
+}
+
+func (w *FileWriter) fallbackLog(batch []ProfileEntry) {
+	fallbackWritesTotal.Add(float64(len(batch)))
+	for _, entry := range batch {
+		data, err := json.Marshal(entry)
+		if err != nil {
+			slog.Error("fallback: failed to marshal entry", "error", err)
+			continue
+		}
+		slog.Warn("fallback: writing entry to stdout", "sr_query_id", entry.SRQueryID, "entry", string(data))
+	}
 }

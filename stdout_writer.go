@@ -124,28 +124,35 @@ func (w *StdoutWriter) flush(batch []ProfileEntry) {
 
 	flushStart := time.Now()
 	var bytesWritten int
+	var errCount int
 
 	for _, entry := range batch {
 		data, err := json.Marshal(entry)
 		if err != nil {
 			slog.Error("failed to encode profile entry", "error", err)
+			errCount++
 			continue
 		}
 		data = append(data, '\n')
 		if _, err := os.Stdout.Write(data); err != nil {
 			slog.Error("failed to write to stdout", "error", err)
+			errCount++
 			continue
 		}
 		bytesWritten += len(data)
 	}
 
 	flushDuration := time.Since(flushStart)
-	flushesTotal.WithLabelValues("success").Inc()
+	if errCount > 0 {
+		flushesTotal.WithLabelValues("error").Inc()
+	} else {
+		flushesTotal.WithLabelValues("success").Inc()
+	}
 	flushDurationSeconds.Observe(flushDuration.Seconds())
-	entriesPerFlush.Observe(float64(len(batch)))
+	entriesPerFlush.Observe(float64(len(batch) - errCount))
 	bytesWrittenTotal.Add(float64(bytesWritten))
 	lastFlushTimestamp.Set(float64(time.Now().Unix()))
 
-	slog.Info("stdout flush complete", "entries", len(batch), "bytes", bytesWritten,
-		"duration", flushDuration.String())
+	slog.Info("stdout flush complete", "entries", len(batch), "errors", errCount,
+		"bytes", bytesWritten, "duration", flushDuration.String())
 }

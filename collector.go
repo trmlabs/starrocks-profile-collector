@@ -18,8 +18,8 @@ import (
 	"net/http"
 	neturl "net/url"
 	"os"
-	"sort"
 	"path/filepath"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -29,7 +29,7 @@ import (
 // This is a permanent error -- the profile was never collected or has been evicted.
 var errProfileNotFound = errors.New("profile not found")
 
-// ProfileEntry represents a single collected query profile for GCS/BigQuery.
+// ProfileEntry represents a single collected query profile for storage output.
 type ProfileEntry struct {
 	Timestamp   string  `json:"ts"`
 	FEHost      string  `json:"fe_host"`
@@ -327,11 +327,11 @@ func (c *Collector) pollFE(ctx context.Context, feHost string) {
 		// fetches within the same poll cycle.
 		c.markSeen(entry.QueryID)
 
-		// Acquire semaphore slot.
+		// Acquire semaphore slot; bail out of the loop on context cancellation.
 		select {
 		case sem <- struct{}{}:
 		case <-ctx.Done():
-			break
+			continue
 		}
 
 		fetchWg.Add(1)
