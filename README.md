@@ -38,7 +38,7 @@ StarRocks collects detailed query execution profiles, but only retains them in F
                ┌─────────────┼─────────────┐
                ▼             ▼             ▼
            GCS bucket    S3 bucket    Local files
-           (JSONL)       (coming)      (JSONL)
+           (JSONL)       (JSONL)       (JSONL)
 ```
 
 ## Quick Start
@@ -97,6 +97,7 @@ Set `STORAGE_BACKEND` to choose where profiles are written:
 | Backend  | Description                         | Required Config               |
 |----------|-------------------------------------|-------------------------------|
 | `gcs`    | Google Cloud Storage (default)      | `GCS_BUCKET`                  |
+| `s3`     | Amazon S3 (and S3-compatible stores) | `S3_BUCKET`                   |
 | `file`   | Local filesystem                    | `OUTPUT_DIR`                  |
 | `stdout` | JSONL to stdout (for piping/debug)  | (none)                        |
 
@@ -151,9 +152,13 @@ All settings are read from environment variables:
 | `FE_USER` | StarRocks user for HTTP API auth | `root` |
 | `FE_PASSWORD` | StarRocks password | `""` |
 | `POLL_INTERVAL` | How often to poll FEs (Go duration, e.g. "5s") | `5s` |
-| `STORAGE_BACKEND` | Storage backend: `gcs`, `file`, or `stdout` | `gcs` |
+| `STORAGE_BACKEND` | Storage backend: `gcs`, `s3`, `file`, or `stdout` | `gcs` |
 | `GCS_BUCKET` | GCS bucket (required for `gcs` backend) | `""` |
 | `GCS_PREFIX` | Path prefix within GCS bucket | `starrocks-query-profiles` |
+| `S3_BUCKET` | S3 bucket (required for `s3` backend) | `""` |
+| `S3_PREFIX` | Path prefix within S3 bucket | `starrocks-query-profiles` |
+| `S3_REGION` | AWS region for the S3 bucket | `""` |
+| `S3_ENDPOINT` | Custom S3 endpoint for S3-compatible stores (e.g., MinIO) | `""` |
 | `OUTPUT_DIR` | Base directory for `file` backend | `./output` |
 | `FILE_PREFIX` | Path prefix within `OUTPUT_DIR` | `starrocks-query-profiles` |
 | `FLUSH_INTERVAL` | How often to flush to storage (Go duration) | `120s` |

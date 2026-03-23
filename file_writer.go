@@ -1,3 +1,6 @@
+// Copyright 2025 TRM Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 // file_writer.go — Batched local filesystem JSONL writer for profile entries.
 // Writes Hive-style partitioned JSONL files to a local directory, using the
 // same path structure as the GCS writer for compatibility with tools that

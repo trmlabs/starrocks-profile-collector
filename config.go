@@ -1,3 +1,6 @@
+// Copyright 2025 TRM Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 // config.go — Configuration struct and environment variable loading for the
 // StarRocks profile collector. All settings are read from environment variables
 // with sensible defaults.
@@ -21,12 +24,18 @@ type Config struct {
 	FEPassword        string   // StarRocks HTTP API password
 	PollInterval      time.Duration
 
-	// Storage backend selection: "gcs", "file", or "stdout".
+	// Storage backend selection: "gcs", "s3", "file", or "stdout".
 	StorageBackend string
 
 	// GCS backend configuration.
 	GCSBucket string
 	GCSPrefix string
+
+	// S3 backend configuration.
+	S3Bucket   string
+	S3Prefix   string
+	S3Region   string
+	S3Endpoint string // Custom endpoint for S3-compatible stores (e.g., MinIO)
 
 	// File backend configuration.
 	OutputDir  string // Base directory for local file output
@@ -71,6 +80,11 @@ func loadConfig() *Config {
 
 		GCSBucket: getEnv("GCS_BUCKET", ""),
 		GCSPrefix: getEnv("GCS_PREFIX", "starrocks-query-profiles"),
+
+		S3Bucket:   getEnv("S3_BUCKET", ""),
+		S3Prefix:   getEnv("S3_PREFIX", "starrocks-query-profiles"),
+		S3Region:   getEnv("S3_REGION", ""),
+		S3Endpoint: getEnv("S3_ENDPOINT", ""),
 
 		OutputDir:  getEnv("OUTPUT_DIR", "./output"),
 		FilePrefix: getEnv("FILE_PREFIX", "starrocks-query-profiles"),

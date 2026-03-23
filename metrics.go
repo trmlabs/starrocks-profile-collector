@@ -1,3 +1,6 @@
+// Copyright 2025 TRM Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 // metrics.go — Prometheus metric definitions for the StarRocks profile collector.
 // All metrics use the "profile_collector_" prefix.
 package main

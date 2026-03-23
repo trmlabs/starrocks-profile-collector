@@ -1,3 +1,6 @@
+// Copyright 2025 TRM Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 // collector.go — Polls StarRocks FE nodes for query details and fetches full
 // execution profiles via HTTP. Deduplicates across FE nodes and polling cycles.
 package main
@@ -13,6 +16,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	neturl "net/url"
 	"os"
 	"sort"
 	"path/filepath"
@@ -286,29 +290,31 @@ func (c *Collector) pollFE(ctx context.Context, feHost string) {
 		c.ready.Store(true)
 	}
 
-	// Track highest eventTime of successfully processed entries.
-	// Only advance the checkpoint after each entry is fully processed,
-	// so failed entries can be retried on the next poll.
 	var maxProcessedEventTime int64
 
-	// Semaphore to bound concurrent profile fetches, preventing overwhelming the FE.
+	// Semaphore to bound concurrent profile fetches per FE.
 	sem := make(chan struct{}, c.cfg.MaxConcurrentFetches)
+	var fetchWg sync.WaitGroup
+
+	// Collect results from concurrent profile fetches.
+	type fetchResult struct {
+		entry       queryDetailEntry
+		profileText string
+	}
+	resultsCh := make(chan fetchResult, len(entries))
 
 	for _, entry := range entries {
 		if ctx.Err() != nil {
-			return
+			break
 		}
 
-		// Only collect finished queries with a valid ID.
 		if entry.QueryID == "" || entry.State != "FINISHED" {
-			// Still advance past non-FINISHED events to avoid re-reading them.
 			if entry.EventTime > maxProcessedEventTime {
 				maxProcessedEventTime = entry.EventTime
 			}
 			continue
 		}
 
-		// Dedup check.
 		if c.seen(entry.QueryID) {
 			profilesSkippedTotal.WithLabelValues("dedup").Inc()
 			if entry.EventTime > maxProcessedEventTime {
@@ -317,84 +323,85 @@ func (c *Collector) pollFE(ctx context.Context, feHost string) {
 			continue
 		}
 
-		// Acquire semaphore slot before fetching.
+		// Pre-mark as seen before launching goroutine to prevent duplicate
+		// fetches within the same poll cycle.
+		c.markSeen(entry.QueryID)
+
+		// Acquire semaphore slot.
 		select {
 		case sem <- struct{}{}:
 		case <-ctx.Done():
-			return
+			break
 		}
 
-		// Fetch full profile text BEFORE marking as seen.
-		// If fetch fails, the entry is not marked and will be retried next poll.
-		profileText, err := c.fetchProfile(ctx, feHost, entry.QueryID)
-		<-sem // Release semaphore slot.
-		if err != nil {
-			if errors.Is(err, errProfileNotFound) {
-				// 404 is permanent -- profile was never collected or was evicted.
-				// Mark as seen so we don't retry, and advance checkpoint past it.
-				slog.Debug("profile not found (not collected or evicted)", "query_id", entry.QueryID, "fe_host", feHost)
-				c.markSeen(entry.QueryID)
-				profilesSkippedTotal.WithLabelValues("not_found").Inc()
-				if entry.EventTime > maxProcessedEventTime {
-					maxProcessedEventTime = entry.EventTime
+		fetchWg.Add(1)
+		go func(e queryDetailEntry) {
+			defer fetchWg.Done()
+			defer func() { <-sem }()
+
+			profileText, err := c.fetchProfile(ctx, feHost, e.QueryID)
+			if err != nil {
+				if errors.Is(err, errProfileNotFound) {
+					slog.Debug("profile not found (not collected or evicted)", "query_id", e.QueryID, "fe_host", feHost)
+					profilesSkippedTotal.WithLabelValues("not_found").Inc()
+				} else {
+					slog.Warn("failed to fetch profile", "query_id", e.QueryID, "fe_host", feHost, "error", err)
+					profilesSkippedTotal.WithLabelValues("fetch_error").Inc()
 				}
-			} else {
-				// Transient error -- do NOT mark seen, retry on next poll.
-				slog.Warn("failed to fetch profile", "query_id", entry.QueryID, "fe_host", feHost, "error", err)
-				profilesSkippedTotal.WithLabelValues("fetch_error").Inc()
+				return
 			}
-			continue
-		}
+			resultsCh <- fetchResult{entry: e, profileText: profileText}
+		}(entry)
+	}
 
-		// Mark as seen only after successful fetch.
-		c.markSeen(entry.QueryID)
+	// Wait for all fetches to complete, then close the results channel.
+	fetchWg.Wait()
+	close(resultsCh)
 
-		// Compute MD5 hash of SQL text for cross-system correlation.
+	// Process results and emit to writer.
+	for r := range resultsCh {
 		var queryHash string
-		if entry.SQL != "" {
-			queryHash = fmt.Sprintf("%x", md5.Sum([]byte(entry.SQL)))
+		if r.entry.SQL != "" {
+			queryHash = fmt.Sprintf("%x", md5.Sum([]byte(r.entry.SQL)))
 		}
 
-		// Convert epoch millis to ISO8601.
 		startTimeStr := ""
-		if entry.StartTime > 0 {
-			startTimeStr = time.UnixMilli(entry.StartTime).UTC().Format(time.RFC3339)
+		if r.entry.StartTime > 0 {
+			startTimeStr = time.UnixMilli(r.entry.StartTime).UTC().Format(time.RFC3339)
 		}
 		endTimeStr := ""
-		if entry.EndTime > 0 {
-			endTimeStr = time.UnixMilli(entry.EndTime).UTC().Format(time.RFC3339)
+		if r.entry.EndTime > 0 {
+			endTimeStr = time.UnixMilli(r.entry.EndTime).UTC().Format(time.RFC3339)
 		}
 		durationMs := float64(0)
-		if entry.Latency > 0 {
-			durationMs = float64(entry.Latency)
+		if r.entry.Latency > 0 {
+			durationMs = float64(r.entry.Latency)
 		}
 
 		profileEntry := ProfileEntry{
 			Timestamp:   time.Now().UTC().Format(time.RFC3339),
 			FEHost:      feHost,
 			Cluster:     c.cfg.ClusterName,
-			SRQueryID:   entry.QueryID,
-			State:       entry.State,
-			Database:    entry.Database,
-			User:        entry.User,
+			SRQueryID:   r.entry.QueryID,
+			State:       r.entry.State,
+			Database:    r.entry.Database,
+			User:        r.entry.User,
 			StartTime:   startTimeStr,
 			EndTime:     endTimeStr,
 			DurationMs:  durationMs,
-			SQLText:     entry.SQL,
+			SQLText:     r.entry.SQL,
 			QueryHash:   queryHash,
-			ProfileText: profileText,
+			ProfileText: r.profileText,
 		}
 
 		c.writer.Write(profileEntry)
 		profilesCollectedTotal.WithLabelValues(feHost).Inc()
 
-		// Advance checkpoint only after successful processing.
-		if entry.EventTime > maxProcessedEventTime {
-			maxProcessedEventTime = entry.EventTime
+		if r.entry.EventTime > maxProcessedEventTime {
+			maxProcessedEventTime = r.entry.EventTime
 		}
 	}
 
-	// Update lastEventTime for this FE after processing all entries.
 	if maxProcessedEventTime > 0 {
 		c.lastEventTimeMu.Lock()
 		c.lastEventTime[feHost] = maxProcessedEventTime
@@ -489,7 +496,7 @@ func (c *Collector) fetchQueryDetails(ctx context.Context, feHost string, eventT
 
 // fetchProfile calls GET /api/profile?query_id=<id> and returns the plain text profile.
 func (c *Collector) fetchProfile(ctx context.Context, feHost string, queryID string) (string, error) {
-	url := fmt.Sprintf("http://%s/api/profile?query_id=%s", feHost, queryID)
+	url := fmt.Sprintf("http://%s/api/profile?query_id=%s", feHost, neturl.QueryEscape(queryID))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

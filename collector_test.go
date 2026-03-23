@@ -1,3 +1,6 @@
+// Copyright 2025 TRM Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -640,30 +643,35 @@ func TestPollFEEndToEnd(t *testing.T) {
 		t.Fatalf("expected 2 entries written, got %d", len(entries))
 	}
 
-	entry1 := entries[0]
-	entry2 := entries[1]
+	// Build map by query ID since concurrent fetches may return in any order.
+	byID := make(map[string]ProfileEntry)
+	for _, e := range entries {
+		byID[e.SRQueryID] = e
+	}
 
-	if entry1.SRQueryID != "e2e-q1" {
-		t.Errorf("expected first entry sr_query_id=e2e-q1, got %s", entry1.SRQueryID)
+	q1, ok := byID["e2e-q1"]
+	if !ok {
+		t.Fatal("expected entry for e2e-q1")
 	}
-	if entry1.ProfileText != "Profile for e2e-q1" {
-		t.Errorf("expected profile text 'Profile for e2e-q1', got %q", entry1.ProfileText)
+	if q1.ProfileText != "Profile for e2e-q1" {
+		t.Errorf("expected profile text 'Profile for e2e-q1', got %q", q1.ProfileText)
 	}
-	if entry1.Cluster != "test-cluster" {
-		t.Errorf("expected cluster=test-cluster, got %s", entry1.Cluster)
+	if q1.Cluster != "test-cluster" {
+		t.Errorf("expected cluster=test-cluster, got %s", q1.Cluster)
 	}
-	if entry1.FEHost != feAddr {
-		t.Errorf("expected fe_host=%s, got %s", feAddr, entry1.FEHost)
+	if q1.FEHost != feAddr {
+		t.Errorf("expected fe_host=%s, got %s", feAddr, q1.FEHost)
 	}
-	if entry1.QueryHash == "" {
+	if q1.QueryHash == "" {
 		t.Error("expected non-empty query_hash for entry with SQL")
 	}
 
-	if entry2.SRQueryID != "e2e-q2" {
-		t.Errorf("expected second entry sr_query_id=e2e-q2, got %s", entry2.SRQueryID)
+	q2, ok := byID["e2e-q2"]
+	if !ok {
+		t.Fatal("expected entry for e2e-q2")
 	}
-	if entry2.User != "analyst" {
-		t.Errorf("expected user=analyst, got %s", entry2.User)
+	if q2.User != "analyst" {
+		t.Errorf("expected user=analyst, got %s", q2.User)
 	}
 
 	// Verify checkpoint was advanced.

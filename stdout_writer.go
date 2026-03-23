@@ -1,3 +1,6 @@
+// Copyright 2025 TRM Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 // stdout_writer.go — JSONL writer that outputs profile entries to stdout.
 // Useful for piping output to other tools or for local debugging.
 package main

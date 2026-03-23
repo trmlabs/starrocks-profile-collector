@@ -5,7 +5,7 @@ FROM golang:1.24 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
-COPY *.go ./
+COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /starrocks-profile-collector .
 
 FROM alpine:3.21

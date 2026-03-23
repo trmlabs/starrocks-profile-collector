@@ -1,3 +1,6 @@
+// Copyright 2025 TRM Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 // main.go — Entry point for the StarRocks profile collector. Loads configuration,
 // initializes the selected storage backend, starts the metrics HTTP server and
 // FE polling loop, and handles SIGINT/SIGTERM for graceful shutdown.
@@ -63,7 +66,11 @@ func main() {
 	metricsServer := startMetricsServer(cfg.MetricsPort, ready)
 
 	collector := NewCollector(cfg, writer, ready)
-	go collector.Run(ctx)
+	collectorDone := make(chan struct{})
+	go func() {
+		collector.Run(ctx)
+		close(collectorDone)
+	}()
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -71,6 +78,9 @@ func main() {
 	slog.Info("received shutdown signal", "signal", sig.String())
 
 	cancel()
+
+	// Wait for the collector to finish in-flight work before closing the writer.
+	<-collectorDone
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
@@ -100,6 +110,20 @@ func newWriter(ctx context.Context, cfg *Config) (Writer, error) {
 			BufferSize:    cfg.BufferSize,
 		})
 
+	case "s3":
+		if cfg.S3Bucket == "" {
+			return nil, fmt.Errorf("S3_BUCKET is required when STORAGE_BACKEND=s3")
+		}
+		return NewS3Writer(ctx, S3WriterConfig{
+			S3Bucket:      cfg.S3Bucket,
+			S3Prefix:      cfg.S3Prefix,
+			S3Region:      cfg.S3Region,
+			S3Endpoint:    cfg.S3Endpoint,
+			FlushInterval: cfg.FlushInterval,
+			BatchSize:     cfg.BatchSize,
+			BufferSize:    cfg.BufferSize,
+		})
+
 	case "file":
 		return NewFileWriter(FileWriterConfig{
 			OutputDir:     cfg.OutputDir,
@@ -117,7 +141,7 @@ func newWriter(ctx context.Context, cfg *Config) (Writer, error) {
 		}), nil
 
 	default:
-		return nil, fmt.Errorf("unknown STORAGE_BACKEND: %q (supported: gcs, file, stdout)", cfg.StorageBackend)
+		return nil, fmt.Errorf("unknown STORAGE_BACKEND: %q (supported: gcs, s3, file, stdout)", cfg.StorageBackend)
 	}
 }
 

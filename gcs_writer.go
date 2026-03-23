@@ -1,3 +1,6 @@
+// Copyright 2025 TRM Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 // gcs_writer.go — Batched GCS JSONL writer for profile entries.
 // Buffers entries in a channel and flushes to GCS as newline-delimited JSON
 // on a timer or when the batch size threshold is reached.
