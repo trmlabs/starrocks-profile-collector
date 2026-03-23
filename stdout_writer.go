@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"os"
 	"sync"
@@ -121,28 +120,29 @@ func (w *StdoutWriter) flush(batch []ProfileEntry) {
 	}
 
 	flushStart := time.Now()
-	bytesWritten := 0
+	var bytesWritten int
 
-	encoder := json.NewEncoder(os.Stdout)
 	for _, entry := range batch {
 		data, err := json.Marshal(entry)
 		if err != nil {
 			slog.Error("failed to encode profile entry", "error", err)
 			continue
 		}
-		bytesWritten += len(data) + 1
-		if err := encoder.Encode(entry); err != nil {
+		data = append(data, '\n')
+		if _, err := os.Stdout.Write(data); err != nil {
 			slog.Error("failed to write to stdout", "error", err)
 			continue
 		}
+		bytesWritten += len(data)
 	}
 
 	flushDuration := time.Since(flushStart)
-	gcsFlushesTotal.WithLabelValues("success").Inc()
-	gcsFlushDuration.Observe(flushDuration.Seconds())
-	gcsEntriesPerFlush.Observe(float64(len(batch)))
-	gcsBytesWritten.Add(float64(bytesWritten))
-	gcsLastFlushTimestamp.Set(float64(time.Now().Unix()))
+	flushesTotal.WithLabelValues("success").Inc()
+	flushDurationSeconds.Observe(flushDuration.Seconds())
+	entriesPerFlush.Observe(float64(len(batch)))
+	bytesWrittenTotal.Add(float64(bytesWritten))
+	lastFlushTimestamp.Set(float64(time.Now().Unix()))
 
-	fmt.Fprintf(os.Stderr, "stdout flush: %d entries, %d bytes\n", len(batch), bytesWritten)
+	slog.Info("stdout flush complete", "entries", len(batch), "bytes", bytesWritten,
+		"duration", flushDuration.String())
 }

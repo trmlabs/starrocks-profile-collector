@@ -167,7 +167,7 @@ func TestDedupLogic(t *testing.T) {
 		DedupTTL:     100 * time.Millisecond,
 	}
 
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	if collector.seen("q1") {
 		t.Error("q1 should not be seen yet")
@@ -196,7 +196,7 @@ func TestDedupEviction(t *testing.T) {
 	cfg := &Config{
 		DedupTTL: 200 * time.Millisecond,
 	}
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	collector.markSeen("old")
 	time.Sleep(100 * time.Millisecond)
@@ -314,7 +314,7 @@ func TestCollectorFEUnavailable(t *testing.T) {
 		DedupTTL:    time.Minute,
 	}
 
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	ctx := context.Background()
 	_, err := collector.fetchQueryDetails(ctx, "localhost:1", 0)
@@ -326,7 +326,7 @@ func TestCollectorFEUnavailable(t *testing.T) {
 // TestBackoffRecordAndReset tests the exponential backoff mechanism.
 func TestBackoffRecordAndReset(t *testing.T) {
 	cfg := &Config{DedupTTL: time.Minute}
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	feHost := "fe-backoff:8030"
 
@@ -361,7 +361,7 @@ func TestBackoffRecordAndReset(t *testing.T) {
 // TestBackoffExponentialGrowth tests that backoff delay doubles on consecutive failures.
 func TestBackoffExponentialGrowth(t *testing.T) {
 	cfg := &Config{DedupTTL: time.Minute}
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	feHost := "fe-growth:8030"
 
@@ -396,7 +396,7 @@ func TestBackoffExponentialGrowth(t *testing.T) {
 // TestBackoffMaxCap tests that backoff delay is capped at backoffMax.
 func TestBackoffMaxCap(t *testing.T) {
 	cfg := &Config{DedupTTL: time.Minute}
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	feHost := "fe-cap:8030"
 
@@ -456,7 +456,7 @@ func TestConcurrentPollAllFEs(t *testing.T) {
 		DedupTTL:     time.Minute,
 	}
 
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	start := time.Now()
 	collector.pollAllFEs(context.Background())
@@ -506,7 +506,7 @@ func TestPollAllFEsSkipsBackedOffHosts(t *testing.T) {
 		DedupTTL:     time.Minute,
 	}
 
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	// Put server2's address into backoff.
 	collector.recordFailure(server2.Listener.Addr().String())
@@ -700,7 +700,7 @@ func TestHTTPRetryOn5xx(t *testing.T) {
 		HTTPRetries: 2,
 		DedupTTL:    time.Minute,
 	}
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/test", nil)
 	resp, err := collector.doHTTPWithRetry(context.Background(), req)
@@ -723,7 +723,7 @@ func TestEmergencyEviction(t *testing.T) {
 		DedupTTL:        time.Hour,
 		MaxDedupEntries: 20,
 	}
-	collector := NewCollector(cfg, nil)
+	collector := NewCollector(cfg, nil, nil)
 
 	// Insert 25 entries — should trigger emergency eviction at entry 21.
 	for i := 0; i < 25; i++ {

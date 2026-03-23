@@ -62,8 +62,7 @@ func main() {
 	ready := &atomic.Bool{}
 	metricsServer := startMetricsServer(cfg.MetricsPort, ready)
 
-	collector := NewCollector(cfg, writer)
-	collector.ready = ready
+	collector := NewCollector(cfg, writer, ready)
 	go collector.Run(ctx)
 
 	sigCh := make(chan os.Signal, 1)

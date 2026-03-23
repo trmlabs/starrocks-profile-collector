@@ -1,12 +1,11 @@
-# Only include Go source and module files for multi-stage build.
-# For Dockerfile.host-build, only the binary is needed.
+# Exclude non-essential files from the Docker build context.
+# The multi-stage Dockerfile only needs Go source and module files.
+# Dockerfile.host-build needs the pre-built binary, so don't exclude it.
 .git
 .github
 deploy
 *.md
 LICENSE
-CONTRIBUTING.md
 coverage.out
 coverage.html
-starrocks-profile-collector
 Dockerfile.host-build

@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -89,7 +90,7 @@ type Collector struct {
 	lastEventTime   map[string]int64
 
 	// dedup tracks seen query IDs to avoid re-fetching profiles.
-	dedupMu sync.Mutex
+	dedupMu sync.RWMutex
 	dedup   map[string]time.Time
 
 	// backoff tracks per-FE exponential backoff on repeated failures.
@@ -101,9 +102,9 @@ type Collector struct {
 	ready *atomic.Bool
 }
 
-// NewCollector creates a new Collector.
-func NewCollector(cfg *Config, writer Writer) *Collector {
-	// Pre-compute the Basic auth header.
+// NewCollector creates a new Collector. The ready flag is set to true after the
+// first successful FE poll; pass nil to disable readiness signaling.
+func NewCollector(cfg *Config, writer Writer, ready *atomic.Bool) *Collector {
 	credentials := base64.StdEncoding.EncodeToString(
 		[]byte(fmt.Sprintf("%s:%s", cfg.FEUser, cfg.FEPassword)),
 	)
@@ -118,6 +119,7 @@ func NewCollector(cfg *Config, writer Writer) *Collector {
 		lastEventTime: make(map[string]int64),
 		dedup:         make(map[string]time.Time),
 		backoff:       make(map[string]*feBackoff),
+		ready:         ready,
 	}
 }
 
@@ -164,8 +166,13 @@ func (c *Collector) saveCheckpoint() {
 		return
 	}
 	path := filepath.Join(c.cfg.CheckpointDir, "checkpoint.json")
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		slog.Error("failed to write checkpoint", "path", path, "error", err)
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+		slog.Error("failed to write checkpoint temp file", "path", tmpPath, "error", err)
+		return
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		slog.Error("failed to rename checkpoint temp file", "from", tmpPath, "to", path, "error", err)
 	}
 }
 
@@ -515,8 +522,8 @@ func (c *Collector) fetchProfile(ctx context.Context, feHost string, queryID str
 
 // seen returns true if the query ID has already been processed.
 func (c *Collector) seen(queryID string) bool {
-	c.dedupMu.Lock()
-	defer c.dedupMu.Unlock()
+	c.dedupMu.RLock()
+	defer c.dedupMu.RUnlock()
 	_, ok := c.dedup[queryID]
 	return ok
 }
@@ -543,9 +550,6 @@ func (c *Collector) emergencyEvictLocked(maxEntries int) {
 		toEvict = 1
 	}
 
-	// Find the oldest entries by collecting all timestamps and evicting
-	// those with the smallest values. For simplicity we do a single pass
-	// evicting any entry older than the Nth-oldest cutoff.
 	type entry struct {
 		id string
 		ts time.Time
@@ -555,17 +559,11 @@ func (c *Collector) emergencyEvictLocked(maxEntries int) {
 		entries = append(entries, entry{id, ts})
 	}
 
-	// Partial sort: find the cutoff timestamp for the oldest toEvict entries.
-	// Simple approach: sort and take the first toEvict.
-	// For 100k entries this is fine (< 1ms).
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].ts.Before(entries[j].ts)
+	})
+
 	for i := 0; i < toEvict && i < len(entries); i++ {
-		minIdx := i
-		for j := i + 1; j < len(entries); j++ {
-			if entries[j].ts.Before(entries[minIdx].ts) {
-				minIdx = j
-			}
-		}
-		entries[i], entries[minIdx] = entries[minIdx], entries[i]
 		delete(c.dedup, entries[i].id)
 	}
 

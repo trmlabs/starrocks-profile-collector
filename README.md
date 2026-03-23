@@ -237,6 +237,8 @@ OPTIONS (
 | `profile_collector_bytes_written_total` | Counter | -- | Total bytes written |
 | `profile_collector_entries_per_flush` | Histogram | -- | Entries per flush |
 | `profile_collector_flush_duration_seconds` | Histogram | -- | Flush duration |
+| `profile_collector_last_flush_timestamp_seconds` | Gauge | -- | Unix timestamp of last successful flush |
+| `profile_collector_fallback_writes_total` | Counter | -- | Entries written to fallback log on storage errors |
 
 Endpoints:
 - `GET /metrics` -- Prometheus metrics

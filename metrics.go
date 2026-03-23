@@ -41,7 +41,7 @@ var (
 		[]string{"fe_host"},
 	)
 
-	gcsFlushesTotal = promauto.NewCounterVec(
+	flushesTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "profile_collector_flushes_total",
 			Help: "Total number of flush operations",
@@ -56,14 +56,14 @@ var (
 		},
 	)
 
-	gcsBytesWritten = promauto.NewCounter(
+	bytesWrittenTotal = promauto.NewCounter(
 		prometheus.CounterOpts{
 			Name: "profile_collector_bytes_written_total",
 			Help: "Total bytes written to the storage backend",
 		},
 	)
 
-	gcsEntriesPerFlush = promauto.NewHistogram(
+	entriesPerFlush = promauto.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "profile_collector_entries_per_flush",
 			Help:    "Number of entries written per flush",
@@ -71,7 +71,7 @@ var (
 		},
 	)
 
-	gcsFlushDuration = promauto.NewHistogram(
+	flushDurationSeconds = promauto.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "profile_collector_flush_duration_seconds",
 			Help:    "Duration of flush operations in seconds",
@@ -79,14 +79,14 @@ var (
 		},
 	)
 
-	gcsLastFlushTimestamp = promauto.NewGauge(
+	lastFlushTimestamp = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "profile_collector_last_flush_timestamp_seconds",
 			Help: "Unix timestamp of the last successful flush",
 		},
 	)
 
-	gcsFallbackWrites = promauto.NewCounter(
+	fallbackWritesTotal = promauto.NewCounter(
 		prometheus.CounterOpts{
 			Name: "profile_collector_fallback_writes_total",
 			Help: "Total entries written to fallback log due to storage backend errors",

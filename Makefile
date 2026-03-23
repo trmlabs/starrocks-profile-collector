@@ -1,4 +1,6 @@
-.PHONY: build build-linux test test-unit run clean docker-build docker-push
+.PHONY: build build-linux build-linux-arm64 test test-unit bench test-coverage run \
+       docker-build docker-build-fast docker-build-multiarch docker-push docker-release \
+       clean lint fmt deps help
 
 # Variables
 BINARY_NAME=starrocks-profile-collector

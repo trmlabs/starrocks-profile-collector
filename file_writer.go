@@ -152,7 +152,7 @@ func (w *FileWriter) flush(batch []ProfileEntry) {
 	dir := filepath.Join(w.outputDir, relPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		slog.Error("failed to create partition directory", "error", err, "dir", dir)
-		gcsFlushesTotal.WithLabelValues("error").Inc()
+		flushesTotal.WithLabelValues("error").Inc()
 		return
 	}
 
@@ -170,17 +170,17 @@ func (w *FileWriter) flush(batch []ProfileEntry) {
 
 	if err := os.WriteFile(filePath, buf.Bytes(), 0644); err != nil {
 		slog.Error("failed to write JSONL file", "error", err, "path", filePath)
-		gcsFlushesTotal.WithLabelValues("error").Inc()
+		flushesTotal.WithLabelValues("error").Inc()
 		return
 	}
 
 	flushDuration := time.Since(flushStart)
 	bytesWritten := int64(buf.Len())
-	gcsFlushesTotal.WithLabelValues("success").Inc()
-	gcsFlushDuration.Observe(flushDuration.Seconds())
-	gcsEntriesPerFlush.Observe(float64(len(batch)))
-	gcsBytesWritten.Add(float64(bytesWritten))
-	gcsLastFlushTimestamp.Set(float64(time.Now().Unix()))
+	flushesTotal.WithLabelValues("success").Inc()
+	flushDurationSeconds.Observe(flushDuration.Seconds())
+	entriesPerFlush.Observe(float64(len(batch)))
+	bytesWrittenTotal.Add(float64(bytesWritten))
+	lastFlushTimestamp.Set(float64(time.Now().Unix()))
 
 	slog.Info("file flush complete", "entries", len(batch), "bytes", bytesWritten,
 		"path", filePath, "duration", flushDuration.String())

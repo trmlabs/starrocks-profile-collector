@@ -19,9 +19,15 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/path: "/metrics"
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: collector
+          # Pin to a specific version for production (e.g., v1.0.0).
           image: ghcr.io/trmlabs/starrocks-profile-collector:latest
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
           ports:
             - name: metrics
               containerPort: 9091

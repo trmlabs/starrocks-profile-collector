@@ -191,27 +191,26 @@ func (w *GCSWriter) flush(batch []ProfileEntry) {
 	if _, err := io.Copy(writer, &buf); err != nil {
 		slog.Error("failed to write to GCS", "error", err, "path", objectPath, "entries", len(batch))
 		writer.Close()
-		gcsFlushesTotal.WithLabelValues("error").Inc()
-		gcsFlushDuration.Observe(time.Since(flushStart).Seconds())
+		flushesTotal.WithLabelValues("error").Inc()
+		flushDurationSeconds.Observe(time.Since(flushStart).Seconds())
 		w.fallbackLog(batch)
 		return
 	}
 
 	if err := writer.Close(); err != nil {
 		slog.Error("failed to close GCS writer", "error", err, "path", objectPath)
-		gcsFlushesTotal.WithLabelValues("error").Inc()
-		gcsFlushDuration.Observe(time.Since(flushStart).Seconds())
+		flushesTotal.WithLabelValues("error").Inc()
+		flushDurationSeconds.Observe(time.Since(flushStart).Seconds())
 		w.fallbackLog(batch)
 		return
 	}
 
-	// Record successful flush metrics.
 	flushDuration := time.Since(flushStart)
-	gcsFlushesTotal.WithLabelValues("success").Inc()
-	gcsFlushDuration.Observe(flushDuration.Seconds())
-	gcsEntriesPerFlush.Observe(float64(len(batch)))
-	gcsBytesWritten.Add(float64(bytesToWrite))
-	gcsLastFlushTimestamp.Set(float64(time.Now().Unix()))
+	flushesTotal.WithLabelValues("success").Inc()
+	flushDurationSeconds.Observe(flushDuration.Seconds())
+	entriesPerFlush.Observe(float64(len(batch)))
+	bytesWrittenTotal.Add(float64(bytesToWrite))
+	lastFlushTimestamp.Set(float64(time.Now().Unix()))
 
 	slog.Info("GCS flush complete", "entries", len(batch), "bytes", bytesToWrite,
 		"path", fmt.Sprintf("gs://%s/%s", w.bucket, objectPath), "duration", flushDuration.String())
@@ -219,7 +218,7 @@ func (w *GCSWriter) flush(batch []ProfileEntry) {
 
 // fallbackLog writes entries to stdout as JSON when GCS writes fail.
 func (w *GCSWriter) fallbackLog(batch []ProfileEntry) {
-	gcsFallbackWrites.Add(float64(len(batch)))
+	fallbackWritesTotal.Add(float64(len(batch)))
 	for _, entry := range batch {
 		data, err := json.Marshal(entry)
 		if err != nil {
