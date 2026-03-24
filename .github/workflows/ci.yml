@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-hardened-latest-m
     steps:
       - uses: actions/checkout@v4
 
@@ -29,7 +29,7 @@ jobs:
         run: go test -v -race ./...
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-hardened-latest-m
     steps:
       - uses: actions/checkout@v4
 
@@ -43,7 +43,7 @@ jobs:
           version: latest
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-hardened-latest-m
     strategy:
       matrix:
         goos: [linux]
