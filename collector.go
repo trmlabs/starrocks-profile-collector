@@ -439,7 +439,7 @@ func (c *Collector) doHTTPWithRetry(ctx context.Context, req *http.Request) (*ht
 
 		// Retry on 5xx server errors.
 		if resp.StatusCode >= 500 {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("server error: %d", resp.StatusCode)
 			continue
 		}
@@ -466,7 +466,7 @@ func (c *Collector) fetchQueryDetails(ctx context.Context, feHost string, eventT
 	if err != nil {
 		return nil, fmt.Errorf("executing request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
@@ -508,7 +508,7 @@ func (c *Collector) fetchProfile(ctx context.Context, feHost string, queryID str
 	if err != nil {
 		return "", fmt.Errorf("executing request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return "", errProfileNotFound
