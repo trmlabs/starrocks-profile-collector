@@ -67,11 +67,11 @@ func TestStdoutWriterFlush(t *testing.T) {
 	writer.flush(batch)
 
 	// Close the write end and read the captured output.
-	w.Close()
+	_ = w.Close()
 	os.Stdout = oldStdout
 
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 
 	lines := strings.Split(strings.TrimSpace(output), "\n")

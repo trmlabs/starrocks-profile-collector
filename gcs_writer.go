@@ -57,7 +57,7 @@ func NewGCSWriter(ctx context.Context, cfg GCSWriterConfig) (*GCSWriter, error) 
 	bucket := client.Bucket(cfg.GCSBucket)
 	if _, err := bucket.Attrs(writerCtx); err != nil {
 		cancel()
-		client.Close()
+		_ = client.Close()
 		return nil, fmt.Errorf("failed to access GCS bucket %s: %w", cfg.GCSBucket, err)
 	}
 
@@ -193,7 +193,7 @@ func (w *GCSWriter) flush(batch []ProfileEntry) {
 
 	if _, err := io.Copy(writer, &buf); err != nil {
 		slog.Error("failed to write to GCS", "error", err, "path", objectPath, "entries", len(batch))
-		writer.Close()
+		_ = writer.Close()
 		flushesTotal.WithLabelValues("error").Inc()
 		flushDurationSeconds.Observe(time.Since(flushStart).Seconds())
 		w.fallbackLog(batch)

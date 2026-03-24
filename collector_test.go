@@ -257,10 +257,10 @@ func TestCollectorPollFE(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/query_detail":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(queryDetailResp)
+			_ = json.NewEncoder(w).Encode(queryDetailResp)
 		case "/api/profile":
 			queryID := r.URL.Query().Get("query_id")
-			fmt.Fprintf(w, "Profile for %s\nSummary: ...\nDetails: ...", queryID)
+			_, _ = fmt.Fprintf(w, "Profile for %s\nSummary: ...\nDetails: ...", queryID)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -436,7 +436,7 @@ func TestConcurrentPollAllFEs(t *testing.T) {
 				pollTimes[name] = time.Now()
 				mu.Unlock()
 				w.Header().Set("Content-Type", "application/json")
-				w.Write([]byte("[]"))
+				_, _ = w.Write([]byte("[]"))
 			default:
 				w.WriteHeader(http.StatusNotFound)
 			}
@@ -490,7 +490,7 @@ func TestPollAllFEsSkipsBackedOffHosts(t *testing.T) {
 				polledHosts[name] = true
 				mu.Unlock()
 				w.Header().Set("Content-Type", "application/json")
-				w.Write([]byte("[]"))
+				_, _ = w.Write([]byte("[]"))
 			}
 		}))
 	}
@@ -601,10 +601,10 @@ func TestPollFEEndToEnd(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/query_detail":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(queryDetailResp)
+			_ = json.NewEncoder(w).Encode(queryDetailResp)
 		case "/api/profile":
 			queryID := r.URL.Query().Get("query_id")
-			fmt.Fprintf(w, "Profile for %s", queryID)
+			_, _ = fmt.Fprintf(w, "Profile for %s", queryID)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -700,7 +700,7 @@ func TestHTTPRetryOn5xx(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -715,7 +715,7 @@ func TestHTTPRetryOn5xx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected success after retry, got error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200, got %d", resp.StatusCode)

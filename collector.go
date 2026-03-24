@@ -65,7 +65,7 @@ type queryDetailEntry struct {
 // Maximum response body sizes to prevent OOM on unexpectedly large responses.
 const (
 	maxQueryDetailResponseBytes = 50 << 20 // 50 MB for query detail listing
-	maxProfileResponseBytes    = 10 << 20  // 10 MB per individual profile
+	maxProfileResponseBytes     = 10 << 20 // 10 MB per individual profile
 )
 
 // Backoff parameters for FE hosts that are repeatedly failing.
@@ -644,9 +644,7 @@ func (c *Collector) recordFailure(feHost string) {
 func (c *Collector) resetBackoff(feHost string) {
 	c.backoffMu.Lock()
 	defer c.backoffMu.Unlock()
-	if _, ok := c.backoff[feHost]; ok {
-		delete(c.backoff, feHost)
-	}
+	delete(c.backoff, feHost)
 }
 
 // ParseQueryDetails parses a JSON byte slice of query detail entries.

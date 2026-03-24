@@ -122,7 +122,7 @@ func TestNewFileWriter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFileWriter failed: %v", err)
 	}
-	defer w.Close()
+	defer func() { _ = w.Close() }()
 
 	expectedDir := filepath.Join(dir, "profiles")
 	if _, err := os.Stat(expectedDir); os.IsNotExist(err) {

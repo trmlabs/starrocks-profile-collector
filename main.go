@@ -153,16 +153,16 @@ func startMetricsServer(addr string, ready *atomic.Bool) *http.Server {
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "OK")
+		_, _ = fmt.Fprint(w, "OK")
 	})
 
 	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
 		if ready.Load() {
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, "OK")
+			_, _ = fmt.Fprint(w, "OK")
 		} else {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			fmt.Fprint(w, "NOT READY")
+			_, _ = fmt.Fprint(w, "NOT READY")
 		}
 	})
 
