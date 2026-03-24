@@ -1,0 +1,115 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starrocks-profile-collector
+  labels:
+    app: starrocks-profile-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: starrocks-profile-collector
+  template:
+    metadata:
+      labels:
+        app: starrocks-profile-collector
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: collector
+          # Pin to a specific version for production (e.g., v1.0.0).
+          image: ghcr.io/trmlabs/starrocks-profile-collector:latest
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          ports:
+            - name: metrics
+              containerPort: 9091
+              protocol: TCP
+          env:
+            - name: CLUSTER_NAME
+              value: "my-cluster"
+            # Option A: Static FE hosts
+            - name: FE_HOSTS
+              value: "starrocks-fe-0.starrocks-fe.starrocks.svc:8030,starrocks-fe-1.starrocks-fe.starrocks.svc:8030"
+            # Option B: Headless service discovery (uncomment and remove FE_HOSTS above)
+            # - name: FE_HEADLESS_SERVICE
+            #   value: "kube-starrocks-fe-search.starrocks.svc.cluster.local"
+            # - name: FE_HTTP_PORT
+            #   value: "8030"
+            - name: FE_USER
+              value: "root"
+            - name: FE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: starrocks-profile-collector
+                  key: fe-password
+            - name: STORAGE_BACKEND
+              value: "gcs"
+            - name: GCS_BUCKET
+              value: "my-bucket"
+            - name: GCS_PREFIX
+              value: "starrocks-query-profiles"
+            - name: POLL_INTERVAL
+              value: "5s"
+            - name: FLUSH_INTERVAL
+              value: "120s"
+            - name: BATCH_SIZE
+              value: "1000"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: starrocks-profile-collector
+  labels:
+    app: starrocks-profile-collector
+spec:
+  selector:
+    app: starrocks-profile-collector
+  ports:
+    - name: metrics
+      port: 9091
+      targetPort: metrics
+      protocol: TCP
+---
+# ServiceMonitor for Prometheus Operator (optional).
+# Uncomment if using kube-prometheus-stack or similar.
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: starrocks-profile-collector
+#   labels:
+#     app: starrocks-profile-collector
+# spec:
+#   selector:
+#     matchLabels:
+#       app: starrocks-profile-collector
+#   endpoints:
+#     - port: metrics
+#       interval: 30s
+#       path: /metrics

@@ -1,0 +1,14 @@
+# Binary
+starrocks-profile-collector
+
+# Test coverage
+coverage.out
+coverage.html
+
+# Output directory (local file backend)
+output/
+
+# IDE
+.idea/
+.vscode/
+*.swp

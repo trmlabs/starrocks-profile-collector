@@ -1,0 +1,11 @@
+# Exclude non-essential files from the Docker build context.
+# The multi-stage Dockerfile only needs Go source and module files.
+# Dockerfile.host-build needs the pre-built binary, so don't exclude it.
+.git
+.github
+deploy
+*.md
+LICENSE
+coverage.out
+coverage.html
+Dockerfile.host-build

@@ -1,0 +1,43 @@
+name: Bug Report
+description: Report a bug in the StarRocks Profile Collector
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this issue?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Collector version
+      description: Output of the Docker image tag or git commit
+      placeholder: "v1.0.0"
+  - type: input
+    id: starrocks_version
+    attributes:
+      label: StarRocks version
+      placeholder: "3.3.0"
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Storage backend
+      options:
+        - gcs
+        - s3
+        - file
+        - stdout
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      render: shell
