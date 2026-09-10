@@ -1,6 +1,6 @@
 # Multi-stage build: compile Go binary, then copy into minimal Alpine image.
 # For faster local iteration, use `make docker-build` which builds on host first.
-FROM golang:1.24 AS builder
+FROM golang:1.26 AS builder
 
 WORKDIR /src
 COPY go.mod go.sum ./
