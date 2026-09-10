@@ -1,17 +1,22 @@
+version: "2"
 linters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
   enable:
-    - errcheck
-    - govet
-    - staticcheck
-    - gosimple
-    - ineffassign
-    - unused
     - gofmt
     - goimports
-
-linters-settings:
-  goimports:
-    local-prefixes: github.com/trmlabs/starrocks-profile-collector
-
-issues:
-  exclude-use-default: false
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/trmlabs/starrocks-profile-collector
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
