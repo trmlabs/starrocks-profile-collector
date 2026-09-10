@@ -1,0 +1,67 @@
+metrics.go
+  ba0a6c65f21c8f8d 1-95
+README.md
+  ba0a6c65f21c8f8d 1-274
+main.go
+  ba0a6c65f21c8f8d 1-162
+config.go
+  ba0a6c65f21c8f8d 1-120
+collector_test.go
+  ba0a6c65f21c8f8d 1-747
+gcs_writer.go
+  ba0a6c65f21c8f8d 1-231
+file_writer.go
+  ba0a6c65f21c8f8d 1-187
+gcs_writer_test.go
+  ba0a6c65f21c8f8d 1-189
+writer.go
+  ba0a6c65f21c8f8d 1-17
+CONTRIBUTING.md
+  ba0a6c65f21c8f8d 1-86
+Dockerfile.host-build
+  ba0a6c65f21c8f8d 1-23
+collector.go
+  ba0a6c65f21c8f8d 1-661
+Dockerfile
+  ba0a6c65f21c8f8d 1-31
+.gitignore
+  ba0a6c65f21c8f8d 1-14
+stdout_writer.go
+  ba0a6c65f21c8f8d 1-148
+.github/workflows/ci.yml
+  ba0a6c65f21c8f8d 1-63
+deploy/kubernetes.yaml
+  ba0a6c65f21c8f8d 1-109
+.github/workflows/release.yml
+  ba0a6c65f21c8f8d 1-70
+LICENSE
+  ba0a6c65f21c8f8d 1-191
+Makefile
+  ba0a6c65f21c8f8d 1-100
+deploy/docker-compose.yml
+  ba0a6c65f21c8f8d 1-51
+.dockerignore
+  ba0a6c65f21c8f8d 1-12
+go.mod
+  ba0a6c65f21c8f8d 1-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.17",
+  "base_commit_sha": "9aa58eaa2ac830f6711c64a9547788adaf132361",
+  "prompts": {
+    "ba0a6c65f21c8f8d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "68431981-dba2-4442-b2c8-7f5a34479c84",
+        "model": "claude-4.6-opus-high-thinking"
+      },
+      "human_author": "Vijay <vijay@trmlabs.com>",
+      "messages": [],
+      "total_additions": 3798,
+      "total_deletions": 168,
+      "accepted_lines": 3630,
+      "overriden_lines": 0
+    }
+  }
+}
