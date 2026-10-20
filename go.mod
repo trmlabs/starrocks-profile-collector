@@ -1,6 +1,6 @@
 module github.com/trmlabs/starrocks-profile-collector
 
-go 1.26.0
+go 1.26.10
 
 require (
 	cloud.google.com/go/storage v1.67.1
