@@ -1,0 +1,19 @@
+.github/workflows/ci.yml
+  s_91146d4f2ade52::t_e42aac62607804 33-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7f143552ee6d602544aa304fab40e5eaf73d70b1",
+  "prompts": {},
+  "sessions": {
+    "s_91146d4f2ade52": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "da8175bb-155f-405b-a43b-95fd65cce4e7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Amit Plaha <amit.plaha@trmlabs.com>"
+    }
+  }
+}

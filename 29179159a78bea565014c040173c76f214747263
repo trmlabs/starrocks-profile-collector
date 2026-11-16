@@ -1,0 +1,19 @@
+Dockerfile
+  s_91146d4f2ade52::t_029df7051ce31c 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "29179159a78bea565014c040173c76f214747263",
+  "prompts": {},
+  "sessions": {
+    "s_91146d4f2ade52": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "da8175bb-155f-405b-a43b-95fd65cce4e7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Amit Plaha <amit.plaha@trmlabs.com>"
+    }
+  }
+}

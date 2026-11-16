@@ -1,0 +1,21 @@
+.golangci.yml
+  s_91146d4f2ade52::t_0d5f2ca12c46a3 1,3-9,13-22
+.github/workflows/ci.yml
+  s_91146d4f2ade52::t_008489fae1d5e1 41,43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6c5da0d7d4e174d86beaf1b923f2926783f56f4f",
+  "prompts": {},
+  "sessions": {
+    "s_91146d4f2ade52": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "da8175bb-155f-405b-a43b-95fd65cce4e7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Amit Plaha <amit.plaha@trmlabs.com>"
+    }
+  }
+}

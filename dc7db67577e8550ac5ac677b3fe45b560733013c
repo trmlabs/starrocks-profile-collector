@@ -1,0 +1,33 @@
+collector_test.go
+  a3027fc029e7ef15 260,263,439,493,604,607,703,718
+gcs_writer.go
+  a3027fc029e7ef15 60,196
+stdout_writer_test.go
+  a3027fc029e7ef15 70,74
+main.go
+  a3027fc029e7ef15 156,162,165
+collector.go
+  a3027fc029e7ef15 647
+file_writer_test.go
+  a3027fc029e7ef15 125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.17",
+  "base_commit_sha": "dc7db67577e8550ac5ac677b3fe45b560733013c",
+  "prompts": {
+    "a3027fc029e7ef15": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "eed29040-fa1d-4e22-906a-7b7eefbab83d",
+        "model": "composer-2"
+      },
+      "human_author": "Vijay <vijay@trmlabs.com>",
+      "messages": [],
+      "total_additions": 17,
+      "total_deletions": 19,
+      "accepted_lines": 17,
+      "overriden_lines": 0
+    }
+  }
+}
